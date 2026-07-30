@@ -38,7 +38,8 @@ Synthetic device -> MQTT 3.1.1 over mTLS -> scoped telemetry/config boundary
 
 See [architecture](docs/architecture.md), [security design](docs/security.md),
 [AWS/Kubernetes mapping](docs/aws-and-kubernetes.md), and
-[limitations](docs/limitations.md).
+[limitations](docs/limitations.md). The [verification record](docs/verification.md)
+maps the measured results to the public CI run.
 
 ## Run locally
 
