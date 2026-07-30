@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-device-provisioning
+  labels:
+    app: secure-device-provisioning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-device-provisioning
+  template:
+    metadata:
+      labels:
+        app: secure-device-provisioning
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controlplane
+          image: secure-device-provisioning-service:replace-me
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: mqtts
+              containerPort: 8883
+          env:
+            - name: ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: secure-device-provisioning
+                  key: admin-key
+            - name: MQTT_PUBLIC_ENDPOINT
+              value: secure-device-provisioning:8883
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-device-provisioning
+spec:
+  selector:
+    app: secure-device-provisioning
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: mqtts
+      port: 8883
+      targetPort: mqtts
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-device-provisioning
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-device-provisioning
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8883
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
