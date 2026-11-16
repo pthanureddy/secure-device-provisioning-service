@@ -29,10 +29,25 @@ func TestAuthoritySignsBoundDeviceCertificate(t *testing.T) {
 	}
 	block, _ := pem.Decode(certPEM)
 	parsed, _ := x509.ParseCertificate(block.Bytes)
-	if _, err := parsed.Verify(x509.VerifyOptions{
-		Roots: authority.CertPool(), KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-	}); err != nil {
-		t.Fatalf("device certificate did not verify: %v", err)
+	cases := []struct {
+		name  string
+		at    time.Time
+		valid bool
+	}{
+		{name: "before validity", at: parsed.NotBefore.Add(-time.Second), valid: false},
+		{name: "during validity", at: now, valid: true},
+		{name: "after expiry", at: parsed.NotAfter.Add(time.Second), valid: false},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, verifyErr := parsed.Verify(x509.VerifyOptions{
+				Roots: authority.CertPool(), CurrentTime: testCase.at,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			})
+			if (verifyErr == nil) != testCase.valid {
+				t.Fatalf("valid=%t, verification error=%v", testCase.valid, verifyErr)
+			}
+		})
 	}
 }
 
