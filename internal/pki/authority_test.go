@@ -3,6 +3,7 @@ package pki
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"testing"
 	"time"
 )
@@ -46,6 +47,12 @@ func TestAuthoritySignsBoundDeviceCertificate(t *testing.T) {
 			})
 			if (verifyErr == nil) != testCase.valid {
 				t.Fatalf("valid=%t, verification error=%v", testCase.valid, verifyErr)
+			}
+			if !testCase.valid {
+				var invalid x509.CertificateInvalidError
+				if !errors.As(verifyErr, &invalid) || invalid.Reason != x509.Expired {
+					t.Fatalf("expected X.509 validity rejection, got %v", verifyErr)
+				}
 			}
 		})
 	}

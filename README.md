@@ -110,6 +110,14 @@ Local verification on 30 July 2026:
 
 ## Deliberate boundary
 
+Verification replay on 16 November 2026 passed all 18 top-level tests and three
+certificate-validity subtests, `go vet`, and both binary builds on Windows.
+Certificate tests use an explicit clock for before/during/after-validity cases.
+The negative cases also require the X.509 validity error, so an unrelated error
+cannot pass as successful expiry rejection. Certificate validation in the
+service is unchanged. Linux CI also runs the race detector and image build.
+This assertion maintenance and its verification used Codex assistance.
+
 This service demonstrates Go, device provisioning, PKI, TCP/TLS, MQTT, topic
 authorization, Kubernetes design, and AWS IoT policy mapping. It does not claim
 embedded firmware development, live AWS usage, Axis integration, production scale,
